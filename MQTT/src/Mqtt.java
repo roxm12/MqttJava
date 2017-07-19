@@ -12,16 +12,16 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-public class Mqtt implements MqttCallback{
-	private static String broker;
-	private static String clientId;
-	private static String userName;
-	private static String pwd;
-	private static MqttAsyncClient client;
-    private static MqttMessage message;
-    private static MemoryPersistence persistence;
-    private static MqttConnectOptions connOpts;//extra SSL, TLS setting  
-    private static List<String> topics;
+public class Mqtt implements MqttCallback,Runnable{
+	private  String broker;
+	private  String clientId;
+	private  String userName;
+	private  String pwd;
+	private  MqttAsyncClient client;
+    private  MqttMessage message;
+    private  MemoryPersistence persistence;
+    private  MqttConnectOptions connOpts;//extra SSL, TLS setting  
+    private  List<String> topics;
     
     
     public Mqtt(String broker,String clientId,String userName,String pwd){
@@ -92,8 +92,6 @@ public class Mqtt implements MqttCallback{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	
-    	
     }
     public void subscribe(String topic, int qos){
     	topics.add(topic);
@@ -126,7 +124,12 @@ public class Mqtt implements MqttCallback{
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken arg0) {
 		// TODO Auto-generated method stub
-		System.out.println("Message with "+arg0+" delivered");
+		try {
+			System.out.println("Message with "+arg0.getMessage().toString()+" delivered");
+		} catch (MqttException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -134,5 +137,25 @@ public class Mqtt implements MqttCallback{
 		// TODO Auto-generated method stub
 		System.out.println("Message arrived : " + new String(arg1.getPayload(), "UTF-8"));
 		}
+	
+	public void shutoffSubscribing(){
+		Thread.currentThread().interrupt();
+	}
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		this.init();
+		this.subscribe("/sol",0);
+		while(!Thread.currentThread().isInterrupted()){
+			try{
+				Thread.sleep(1000);
+			}catch(InterruptedException e){
+				e.printStackTrace();
+				Thread.currentThread().interrupt();
+			}
+			
+		}
+		this.disconnect();
+	}
 
 }
