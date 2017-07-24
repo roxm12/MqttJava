@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.json.simple.JSONObject;
 
 public class Mqtt implements MqttCallback,Runnable{
 	private  String broker;
@@ -21,18 +22,31 @@ public class Mqtt implements MqttCallback,Runnable{
     private  MqttMessage message;
     private  MemoryPersistence persistence;
     private  MqttConnectOptions connOpts;//extra SSL, TLS setting  
-    private  List<String> topics;
+    private  List<String> pubTopics;
+    private List<String> subTopics;
     
+    public static SubscribeTopicType topicType;
     
     public Mqtt(String broker,String clientId,String userName,String pwd){
     	this.broker=broker;
     	this.clientId=clientId;
     	this.userName=userName;
     	this.pwd=pwd;
-    	topics=new ArrayList<String>();
+    	pubTopics=new ArrayList<String>();
+    	subTopics=new ArrayList<String>();
+    	
+    
     }
-    public void addTopic(String topic){
-    	topics.add(topic);
+  
+    
+    public void addSubTopic(String topic){
+    	subTopics.add(topic);
+    }
+    public void addPubTopic(String topic){
+    	pubTopics.add(topic);
+    }
+    public String getuserName(){
+    	return this.userName;
     }
     public void init(){
     	try {
@@ -73,6 +87,14 @@ public class Mqtt implements MqttCallback,Runnable{
           e.printStackTrace();
         }
     }
+    public void topicsInit(){
+    	for(SubscribeTopicType type:SubscribeTopicType.values()){
+    		subTopics.add(type.toString());
+    	}
+    	for(PublishTopicType type:PublishTopicType.values()){
+    		pubTopics.add(type.toString());
+    	}
+    }
     public void disconnect(){
     	try {
 			client.disconnect();
@@ -81,20 +103,26 @@ public class Mqtt implements MqttCallback,Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	System.out.println("Disconnected!!");
+    	System.out.println(this.clientId+": Disconnected!!");
     }
-    public void publish(String msg, int qos){
+    /**
+     * 
+     * @param msg -->이것을 Json으로 바꾸면 된다.
+     * @param qos
+     * @param type FDReq FDRes CDReq CDRes topic type을 정한다.
+      */
+    public void publish(String msg, int qos,PublishTopicType type){
     	message.setQos(qos);
     	message.setPayload(msg.getBytes());
     	try {
-			client.publish(topics.get(0), message);
+			client.publish(pubTopics.get(type.ordinal()), message);
 		} catch (MqttException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
     public void subscribe(String topic, int qos){
-    	topics.add(topic);
+    	subTopics.add(topic);
     	try {
 			client.subscribe(topic,qos);
 		} catch (MqttException e) {
@@ -103,7 +131,7 @@ public class Mqtt implements MqttCallback,Runnable{
 		}
     }
     public void unsubscribe(String topic){
-    	Iterator<String> it=topics.iterator();
+    	Iterator<String> it=subTopics.iterator();
     	while(it.hasNext()){
     		String temp=it.next();
     		if(temp.equals(topic))it.remove();
@@ -118,24 +146,32 @@ public class Mqtt implements MqttCallback,Runnable{
 	@Override
 	public void connectionLost(Throwable arg0) {
 		// TODO Auto-generated method stub
-		System.out.println("Lost connection."+arg0.getCause());
+		System.out.println(this.clientId+": Lost connection."+arg0.getCause());
 	}
 
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken arg0) {
 		// TODO Auto-generated method stub
 		try {
-			System.out.println("Message with "+arg0.getMessage().toString()+" delivered");
+			System.out.println("Message with "+arg0.getMessage().toString()+
+					" delivered from"+this.clientId);
 		} catch (MqttException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * Message가 도착한 경우의 routine을 thread로 만들어야 할 것 같다.
+	 */
 	@Override
-	public void messageArrived(String arg0, MqttMessage arg1) throws Exception {
+	public void messageArrived(String topic, MqttMessage arg1) throws Exception {
 		// TODO Auto-generated method stub
-		System.out.println("Message arrived : " + new String(arg1.getPayload(), "UTF-8"));
+		System.out.println("Message arrived : " + new String(arg1.getPayload(), "UTF-8")
+				+" with token:"+topic
+				+" to "+this.clientId);
+		/*DB 저장 같은 루틴*/
+		 //this.publish("YEEPP",0); 서버측에서 MQTT로 메시지를 받는 경우--RP로부터 받는 경우임. --> 이를 다시 가공해서 device에 보내주어야 한다.
 		}
 	
 	public void shutoffSubscribing(){
