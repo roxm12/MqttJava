@@ -9,7 +9,9 @@ public class MainTest {
 		String clientName="solJava";
 		String userName="hansol";
 		String pwd="1231";
-		
+		Thread t=new Thread(new Mqtt(broker,clientName,userName,pwd,new jsonMessageForRPI()));
+		t.start();
+		/*
 		ArrayList<Thread> threads = new ArrayList<Thread>();
 		 for(int i=0;i<10;i++){
 			 Thread t=new Thread(new Mqtt(broker,clientName+Integer.toString(i)
@@ -17,12 +19,15 @@ public class MainTest {
 			 t.start();
 			threads.add(t);
 		 }*/
+		String broker="tcp://ec2-13-124-126-132.ap-northeast-2.compute.amazonaws.com:1883";
+		String clientName="solJava";
+		String userName="hansol";
+		String pwd="1231";
+		jsonMessage jmsg=new jsonMessageForRPI();
+		Thread t=new Thread(new Mqtt(broker,clientName,userName,pwd,jmsg));
+        t.start();		
+		System.out.println(jmsg.getString());
 		
-		for(SubscribeTopicType type:SubscribeTopicType.values()){
-			
-			System.out.println(type);
-			System.out.println(type.ordinal());
-		}
 
 	}
 }

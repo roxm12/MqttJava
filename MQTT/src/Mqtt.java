@@ -17,28 +17,29 @@ public class Mqtt implements MqttCallback,Runnable{
 	private  String broker;
 	private  String clientId;
 	private  String userName;
-	private  String pwd;
+	private  String pwd;//암호화 필요할까?
 	private  MqttAsyncClient client;
     private  MqttMessage message;
     private  MemoryPersistence persistence;
     private  MqttConnectOptions connOpts;//extra SSL, TLS setting  
     private  List<String> pubTopics;
     private List<String> subTopics;
+    private jsonMessage jsonMessage;
     
     public static SubscribeTopicType topicType;
     
-    public Mqtt(String broker,String clientId,String userName,String pwd){
+    public Mqtt(String broker,String clientId,String userName,String pwd,jsonMessage jmsg){
     	this.broker=broker;
     	this.clientId=clientId;
     	this.userName=userName;
     	this.pwd=pwd;
     	pubTopics=new ArrayList<String>();
     	subTopics=new ArrayList<String>();
-    	
-    
+    	this.jsonMessage=jmsg;
     }
-  
-    
+    public void setjsonMessage(jsonMessage jmsg){
+    	this.jsonMessage=jmsg;
+    }
     public void addSubTopic(String topic){
     	subTopics.add(topic);
     }
@@ -57,6 +58,7 @@ public class Mqtt implements MqttCallback,Runnable{
 			connOpts.setUserName(userName);
 			connOpts.setPassword(pwd.toCharArray());
 			connOpts.setCleanSession(true);
+			this.topicsInit();
 			System.out.println("Connecting to broker:"+broker);
 			client.connect(connOpts,null,new IMqttActionListener() {
 				@Override
@@ -115,7 +117,8 @@ public class Mqtt implements MqttCallback,Runnable{
     	message.setQos(qos);
     	message.setPayload(msg.getBytes());
     	try {
-			client.publish(pubTopics.get(type.ordinal()), message);
+			//client.publish(pubTopics.get(type.ordinal()), message);
+    		client.publish(type.toString(), message);
 		} catch (MqttException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -154,7 +157,7 @@ public class Mqtt implements MqttCallback,Runnable{
 		// TODO Auto-generated method stub
 		try {
 			System.out.println("Message with "+arg0.getMessage().toString()+
-					" delivered from"+this.clientId);
+					" delivered from "+this.clientId);
 		} catch (MqttException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -170,6 +173,20 @@ public class Mqtt implements MqttCallback,Runnable{
 		System.out.println("Message arrived : " + new String(arg1.getPayload(), "UTF-8")
 				+" with token:"+topic
 				+" to "+this.clientId);
+		
+		switch(topic){
+		case "FullDataRespond":
+			System.out.println("Parsing result:\n"+this.jsonMessage.parseFullDataResqpondMsg(new String(arg1.getPayload(),"UTF-8")));
+		break;
+		case "ControlRespond":
+			System.out.println("Parsing result:\n"+this.jsonMessage.parseControlResqpondMsg(new String(arg1.getPayload(),"UTF-8")));
+
+			break;
+	    default:
+	    	System.out.println("message arrived had wrong topic");
+				
+		}
+		//this.publish(this.jsonMessage.getString(),0,PublishTopicType.FULLDATAREQUEST);
 		/*DB 저장 같은 루틴*/
 		 //this.publish("YEEPP",0); 서버측에서 MQTT로 메시지를 받는 경우--RP로부터 받는 경우임. --> 이를 다시 가공해서 device에 보내주어야 한다.
 		}
@@ -181,9 +198,13 @@ public class Mqtt implements MqttCallback,Runnable{
 	public void run() {
 		// TODO Auto-generated method stub
 		this.init();
-		this.subscribe("/sol",0);
+		this.subscribe(SubscribeTopicType.CONTROLRESPOND.toString(),0);
+		this.subscribe(SubscribeTopicType.FULLDATARESPOND.toString(),0);
+
 		while(!Thread.currentThread().isInterrupted()){
 			try{
+				this.publish(this.jsonMessage.getString(),0, PublishTopicType.CONTROLRESPOND);
+				System.out.println("Publish");
 				Thread.sleep(1000);
 			}catch(InterruptedException e){
 				e.printStackTrace();

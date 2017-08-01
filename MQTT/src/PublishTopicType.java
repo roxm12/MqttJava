@@ -1,7 +1,9 @@
 
 public enum PublishTopicType {
-   FULLDATAREQUEST("fullDataRequest\\"),
-   CONTROLDEVICEREQUEST("controlDeviceRequest\\");
+   FULLDATAREQUEST("FullDataRequest"),
+   CONTROLREQUEST("ControlRequest"),
+   FULLDATARESPOND("FullDataRespond"),
+   CONTROLRESPOND("ControlRespond");
  
 
    private final String name;

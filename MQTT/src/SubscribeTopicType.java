@@ -1,8 +1,8 @@
 
 public enum SubscribeTopicType {
 	   
-	   FULLDATARESPOND("fullDataRespond\\*"),
-	   CONTROLDEVICERESPOND("controlDeviceRespond\\*");
+	   FULLDATARESPOND("FullDataRespond"),
+	   CONTROLRESPOND("ControlRespond");
 
 	   private final String name;
 		private SubscribeTopicType(String s){
