@@ -203,9 +203,9 @@ public class Mqtt implements MqttCallback,Runnable{
 
 		while(!Thread.currentThread().isInterrupted()){
 			try{
-				this.publish(this.jsonMessage.getString(),0, PublishTopicType.CONTROLRESPOND);
+				this.publish(this.jsonMessage.getString(),0, PublishTopicType.CONTROLREQUEST);
 				System.out.println("Publish");
-				Thread.sleep(1000);
+				Thread.sleep(10000);
 			}catch(InterruptedException e){
 				e.printStackTrace();
 				Thread.currentThread().interrupt();
